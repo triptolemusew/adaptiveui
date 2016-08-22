@@ -1,0 +1,38 @@
+from PyQt4 import QtGui
+import sys
+
+class Test(QtGui.QWidget):
+    def __init__(self):
+        QtGui.QWidget.__init__(self)
+        layout = QtGui.QVBoxLayout(self)
+
+        gBBackupFromIntExt = QtGui.QGroupBox()
+        layout.addWidget(gBBackupFromIntExt)
+
+        bGBackupFromIntExt = QtGui.QButtonGroup(self)
+
+        self.rBBackupFromExt = QtGui.QRadioButton()
+        bGBackupFromIntExt.addButton(self.rBBackupFromExt)
+        layout.addWidget(self.rBBackupFromExt)
+
+        self.rBBackupFromInt = QtGui.QRadioButton()
+        bGBackupFromIntExt.addButton(self.rBBackupFromInt)
+        layout.addWidget(self.rBBackupFromInt)
+
+        gBBackupToIntExt = QtGui.QGroupBox()
+        layout.addWidget(gBBackupToIntExt)
+
+        bGBackupToIntExt = QtGui.QButtonGroup(self)
+
+        self.rBBackupToExt = QtGui.QRadioButton()
+        bGBackupToIntExt.addButton (self.rBBackupToExt)
+        layout.addWidget(self.rBBackupToExt)
+
+        self.rBBackupToInt = QtGui.QRadioButton()
+        bGBackupToIntExt.addButton (self.rBBackupToInt)
+        layout.addWidget(self.rBBackupToInt)
+
+a = QtGui.QApplication(sys.argv)
+t = Test()
+t.show()
+sys.exit(a.exec_())

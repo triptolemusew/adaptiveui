@@ -13,6 +13,7 @@ class myWindow(QtGui.QWidget):
         self.setMaximumSize(1280, 720)
         self.setMinimumSize(1280, 720)
         self.setWindowTitle('App Test 1.0')
+        self.setObjectName("asd")
 
         # Buttons
         self.Button = QtGui.QPushButton('Button 1', self)
