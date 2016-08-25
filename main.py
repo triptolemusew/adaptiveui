@@ -58,7 +58,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.gridLayout_4.setObjectName(_fromUtf8("gridLayout_4"))
         self.music_table = QtGui.QTableWidget(self.scrollAreaWidgetContents_2)
         self.music_table.setObjectName(_fromUtf8("music_table"))
-        self.music_table.setColumnCount(4)
+        self.music_table.setColumnCount(5)
         self.music_table.setRowCount(0)
         self.gridLayout_4.addWidget(self.music_table, 0, 0, 1, 1)
         self.music_list_scrollArea.setWidget(self.scrollAreaWidgetContents_2)
@@ -279,8 +279,9 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.likes_button.setAutoRepeatInterval(1000)
 
         self.notifications_button.clicked.connect(lambda: self.onChanged(self.notifications_button))
-        self.collections_button.clicked.connect(lambda: self.onChanged(self.collections_button))
-        self.likes_button.clicked.connect(lambda: self.onChanged(self.likes_button))
+        # self.collections_button.clicked.connect(lambda: self.onChanged(self.collections_button))
+        self.collections_button.clicked.connect(self.filterCollections)
+        self.likes_button.clicked.connect(self.filterLike)
 
         self.currently_playing_button.clicked.connect(self.changeBackground)
 
@@ -305,6 +306,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.lcdNumber.display("00:00")
 
         self.sources = []
+        self.retrieveMusicList()
 
     def tick(self, time):
         displayTime = QtCore.QTime(0, (time / 60000) % 60, (time / 1000) % 60)
@@ -496,26 +498,44 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
         index = len(self.sources)
 
+        print files
+        file = QtCore.QFile('musiclist.txt')
+        file.open(QtCore.QFile.Append | QtCore.QFile.Text)
+        if not file.open(QtCore.QIODevice.WriteOnly):
+            QtGui.QMessageBox.information(None, 'info', file.errorString())
+
         for string in files:
-            print string
+            stream = QtCore.QTextStream(file)
+            stream << string
+            stream << '\n'
             self.sources.append(Phonon.MediaSource(string))
 
+        print index
         if self.sources:
             self.metaInformationResolver.setCurrentSource(self.sources[index])
 
     def addFolder(self):
-        folder = QtGui.QFileDialog.getExistingDirectory(None, 'Select a folder:',
-                                                        'C://', QtGui.QFileDialog.ShowDirsOnly)
-        print folder[1]
-        for file in os.listdir(folder):
-            if file.endswith(".mp3"):
-                route = os.path.join(folder,file)
-                print route
-                self.sources.append(Phonon.MediaSource(route))
+        dialog = FileDialog()
+        if dialog.exec_() == QtGui.QDialog.Accepted:
+            print(dialog.selectedFiles())
 
+            # TODO: implementing the add folder function
+
+    def retrieveMusicList(self):
+        file = QtCore.QFile('musiclist.txt')
+        file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text)
         index = len(self.sources)
+
+        if not file.open(QtCore.QIODevice.WriteOnly):
+            QtGui.QMessageBox.information(None, 'info', file.errorString())
+
+        stream = QtCore.QTextStream(file)
+        while not stream.atEnd():
+            self.sources.append(Phonon.MediaSource(stream.readLine()))
+
+        print index
         if self.sources:
-            self.metaInformationResolver.setCurrentSource(self.sources[10])
+            self.metaInformationResolver.setCurrentSource(self.sources[0])
 
     def changeBackground(self):
         color1 = QtGui.QColor(255, 0, 0)
@@ -539,7 +559,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
         self.lcdNumber.setPalette(palette)
 
-        headers = ("Title", "Artist", "Album", "Year")
+        headers = ("Title", "Artist", "Album", "Year", "Liked?")
         self.music_table.setHorizontalHeaderLabels(headers)
         self.music_table.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
         self.music_table.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -558,7 +578,45 @@ class Ui_MainWindow(QtGui.QMainWindow):
         else:
             self.mediaObject.stop()
 
+    def contextMenuEvent(self, QContextMenuEvent):
+        self.menu = QtGui.QMenu(self)
+        renameAction = QtGui.QAction('Like/Unlike', self)
+        renameAction.triggered.connect(self.likeSlot)
+        self.menu.addAction(renameAction)
+        self.menu.popup(QtGui.QCursor.pos())
+
+    def likeSlot(self):
+        print self.music_table.currentRow()
+        print self.sources[self.music_table.currentRow()]
+        item = QtGui.QTableWidgetItem(str("Yes"))
+        item_list = self.music_table.item(self.music_table.currentRow(), 4)
+        if not item_list:
+            self.music_table.setItem(self.music_table.currentRow(), 4, item)
+        else:
+            self.music_table.setItem(self.music_table.currentRow(), 4, None)
+
+    def filterLike(self):
+        for i in range(0, self.music_table.rowCount()):
+            item = self.music_table.item(i, 4)
+            if not item:
+                print "noooooooooooooooo!"
+                self.music_table.setRowHidden(i, True)
+
+    def filterCollections(self):
+        for i in range(0, self.music_table.rowCount()):
+            self.music_table.setRowHidden(i, False)
+
     backColor = QtCore.pyqtProperty(QtGui.QColor, getBackColor, setBackColor)
+
+
+class FileDialog(QtGui.QFileDialog):
+    def __init__(self, *args, **kwargs):
+        super(FileDialog, self).__init__(*args, **kwargs)
+        self.setOption(QtGui.QFileDialog.DontUseNativeDialog, True)
+        self.setFileMode(QtGui.QFileDialog.ExistingFiles)
+
+    def accept(self):
+        super(FileDialog, self).accept(self)
 
 
 if __name__ == "__main__":
