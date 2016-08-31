@@ -278,8 +278,9 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.likes_button.setAutoRepeatDelay(1000)
         self.likes_button.setAutoRepeatInterval(1000)
 
-        self.notifications_button.clicked.connect(lambda: self.onChanged(self.notifications_button))
+        # self.notifications_button.clicked.connect(lambda: self.onChanged(self.notifications_button))
         # self.collections_button.clicked.connect(lambda: self.onChanged(self.collections_button))
+        self.notifications_button.clicked.connect(self.displayStack)
         self.collections_button.clicked.connect(self.filterCollections)
         self.likes_button.clicked.connect(self.filterLike)
 
@@ -307,6 +308,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
         self.sources = []
         self.retrieveMusicList()
+        self.cameraStack()
 
     def tick(self, time):
         displayTime = QtCore.QTime(0, (time / 60000) % 60, (time / 1000) % 60)
@@ -599,12 +601,23 @@ class Ui_MainWindow(QtGui.QMainWindow):
         for i in range(0, self.music_table.rowCount()):
             item = self.music_table.item(i, 4)
             if not item:
-                print "noooooooooooooooo!"
                 self.music_table.setRowHidden(i, True)
 
     def filterCollections(self):
         for i in range(0, self.music_table.rowCount()):
             self.music_table.setRowHidden(i, False)
+
+    def cameraStack(self):
+        layout = QtGui.QFormLayout()
+        layout.addRow("Name", QtGui.QLineEdit())
+        layout.addRow("Address", QtGui.QLineEdit())
+        self.page_4.setLayout(layout)
+
+    def displayStack(self):
+        if self.stackedWidget.currentIndex() == 1:
+            self.stackedWidget.setCurrentIndex(0)
+        else:
+            self.stackedWidget.setCurrentIndex(1)
 
     backColor = QtCore.pyqtProperty(QtGui.QColor, getBackColor, setBackColor)
 
