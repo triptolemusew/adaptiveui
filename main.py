@@ -8,9 +8,20 @@
 from PyQt4 import QtCore, QtGui
 from PyQt4 import phonon
 from PyQt4.phonon import Phonon
+from facerec.model import PredictableModel
+from facerec.feature import Fisherfaces
+from facerec.distance import EuclideanDistance
+from facerec.classifier import NearestNeighbor
+from facerec.validation import KFoldCrossValidation
+from facerec.serialization import save_model, load_model
+# for face detection (you can also use OpenCV2 directly):
+from facedet.detector import CascadedDetector
 import cv2
 import sys
 import glob, os
+
+from helper.common import *
+from helper.video import *
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -33,6 +44,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         self._state = 0
+        self.gender = ""
         self._background_clicked = 0
         self.setObjectName(_fromUtf8("MainWindow"))
         self.resize(1254, 872)
@@ -282,11 +294,11 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
         # self.notifications_button.clicked.connect(lambda: self.onChanged(self.notifications_button))
         # self.collections_button.clicked.connect(lambda: self.onChanged(self.collections_button))
-        self.notifications_button.clicked.connect(self.displayStack)
+        self.notifications_button.clicked.connect(self.cameraStack)
         self.collections_button.clicked.connect(self.filterCollections)
         self.likes_button.clicked.connect(self.filterLike)
 
-        self.currently_playing_button.clicked.connect(self.changeBackground)
+        self.currently_playing_button.clicked.connect(self.changeSetting)
 
         # Media stuff starts here
         self.audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
@@ -310,7 +322,8 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
         self.sources = []
         self.retrieveMusicList()
-        self.cameraStack()
+        # self.cameraStack()
+
 
     def tick(self, time):
         displayTime = QtCore.QTime(0, (time / 60000) % 60, (time / 1000) % 60)
@@ -530,8 +543,8 @@ class Ui_MainWindow(QtGui.QMainWindow):
         file.open(QtCore.QIODevice.ReadOnly | QtCore.QIODevice.Text)
         index = len(self.sources)
 
-        if not file.open(QtCore.QIODevice.WriteOnly):
-            QtGui.QMessageBox.information(None, 'info', file.errorString())
+        # if not file.open(QtCore.QIODevice.WriteOnly):
+        #     QtGui.QMessageBox.information(None, 'info', file.errorString())
 
         stream = QtCore.QTextStream(file)
         while not stream.atEnd():
@@ -609,39 +622,89 @@ class Ui_MainWindow(QtGui.QMainWindow):
         for i in range(0, self.music_table.rowCount()):
             self.music_table.setRowHidden(i, False)
 
+    # TODO: Finish the face/detection function
     def cameraStack(self):
         # layout = QtGui.QFormLayout()
         # layout.addRow("Name", QtGui.QLineEdit())
         # layout.addRow("Address", QtGui.QLineEdit())
         # self.page_4.setLayout(layout)
+        model_filename = "model.pkl"
+        image_size = (200,200)
+        [images, labels, subject_names] = read_images("gender/", image_size)
+        list_of_labels = list(xrange(max(labels)+1))
+        subject_dictionary = dict(zip(list_of_labels, subject_names))
+        model = get_model(image_size=image_size, subject_names=subject_dictionary)
+        model.compute(images, labels)
+        print "save model"
+        save_model(model_filename, model)
 
-        # cascPath = sys.argv[1]
-        faceCascade = cv2.CascadeClassifier('asd.xml')
 
+        self.model = load_model(model_filename)
+        # self.model = load_model("model.pkl")
+        faceCascade = 'haarcascade_frontalface_alt2.xml'
+        print self.model.image_size
+        print "Starting the face detection"
+
+        self.detector = CascadedDetector(cascade_fn=faceCascade, minNeighbors=5, scaleFactor=1.1)
         video_capture = cv2.VideoCapture(0)
 
-        # Capture frame-by-frame
-        ret, frame = video_capture.read()
+        while True:
+            ret, frame = video_capture.read()
 
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            img = cv2.resize(frame, (frame.shape[1] / 2, frame.shape[0] / 2), interpolation=cv2.INTER_CUBIC)
+            imgout = img.copy()
+            for i, r in enumerate(self.detector.detect(img)):
+                x0, y0, x1, y1 = r
+                # (1) Get face, (2) Convert to grayscale & (3) resize to image_size:
+                face = img[y0:y1, x0:x1]
+                face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
+                face = cv2.resize(face, self.model.image_size, interpolation=cv2.INTER_CUBIC)
+                # Get a prediction from the model:
+                prediction = self.model.predict(face)[0]
+                # Draw the face area in image:
+                cv2.rectangle(imgout, (x0, y0), (x1, y1), (0, 255, 0), 2)
+                # Draw the predicted name (folder name...):
+                draw_str(imgout, (x0 - 20, y0 - 20), self.model.subject_names[prediction])
+                self.gender =  self.model.subject_names[prediction]
+                self.changeSetting()
+            cv2.imshow('videofacerec', imgout)
 
-        faces = faceCascade.detectMultiScale(
-            gray,
-            scaleFactor=1.1,
-            minNeighbors=5,
-            minSize=(30, 30),
-            flags=cv2.cv.CV_HAAR_SCALE_IMAGE
-        )
+            ch = cv2.waitKey(10)
+            if ch == 27:
+                break
 
-        # Draw a rectangle around the faces
-        for (x, y, w, h) in faces:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-        # Display the resulting frame
-        cv2.imshow('Video', frame)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            sys.exit()
+        # ret, frame = video_capture.read()
+        # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        #
+        # faces = faceCascade.detectMultiScale(
+        #     gray,
+        #     scaleFactor=1.1,
+        #     minNeighbors=5,
+        #     minSize=(30, 30),
+        #     flags=cv2.cv.CV_HAAR_SCALE_IMAGE
+        # )
+        #
+        # # Draw a rectangle around the faces
+        # for (x, y, w, h) in faces:
+        #     cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        #
+        # # Display the resulting frame
+        # cv2.imshow('Video', frame)
+        #
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     sys.exit()
+    def changeSetting(self):
+        if self.gender == "male":
+            print "ayys!"
+            animation = QtCore.QPropertyAnimation(self.currently_playing_button, "color")
+            animation.setDuration(200)
+            animation.setStartValue(QtGui.QColor(0, 0, 0))
+            animation.setEndValue(QtGui.QColor(240, 240, 240))
+            animation.start()
+        elif self.gender == "female":
+            print "d'oh"
 
 
     def displayStack(self):
@@ -662,6 +725,66 @@ class FileDialog(QtGui.QFileDialog):
     def accept(self):
         super(FileDialog, self).accept(self)
 
+def read_images(path, image_size=None):
+    """Reads the images in a given folder, resizes images on the fly if size is given.
+
+    Args:
+        path: Path to a folder with subfolders representing the subjects (persons).
+        sz: A tuple with the size Resizes
+
+    Returns:
+        A list [X, y, folder_names]
+
+            X: The images, which is a Python list of numpy arrays.
+            y: The corresponding labels (the unique number of the subject, person) in a Python list.
+            folder_names: The names of the folder, so you can display it in a prediction.
+    """
+    c = 0
+    X = []
+    y = []
+    folder_names = []
+    for dirname, dirnames, filenames in os.walk(path):
+        for subdirname in dirnames:
+            folder_names.append(subdirname)
+            subject_path = os.path.join(dirname, subdirname)
+            for filename in os.listdir(subject_path):
+                try:
+                    im = cv2.imread(os.path.join(subject_path, filename), cv2.IMREAD_GRAYSCALE)
+                    # resize to given size (if given)
+                    if (image_size is not None):
+                        im = cv2.resize(im, image_size)
+                    X.append(np.asarray(im, dtype=np.uint8))
+                    y.append(c)
+                except IOError, (errno, strerror):
+                    print "I/O error({0}): {1}".format(errno, strerror)
+                except:
+                    print "Unexpected error:", sys.exc_info()[0]
+                    raise
+            c = c+1
+    return [X,y,folder_names]
+
+def get_model(image_size, subject_names):
+    """ This method returns the PredictableModel which is used to learn a model
+        for possible further usage. If you want to define your own model, this
+        is the method to return it from!
+    """
+    # Define the Fisherfaces Method as Feature Extraction method:
+    feature = Fisherfaces()
+    # Define a 1-NN classifier with Euclidean Distance:
+    classifier = NearestNeighbor(dist_metric=EuclideanDistance(), k=1)
+    # Return the model as the combination:
+    return ExtendedPredictableModel(feature=feature, classifier=classifier, image_size=image_size, subject_names=subject_names)
+
+class ExtendedPredictableModel(PredictableModel):
+    """ Subclasses the PredictableModel to store some more
+        information, so we don't need to pass the dataset
+        on each program call...
+    """
+
+    def __init__(self, feature, classifier, image_size, subject_names):
+        PredictableModel.__init__(self, feature=feature, classifier=classifier)
+        self.image_size = image_size
+        self.subject_names = subject_names
 
 if __name__ == "__main__":
     import sys

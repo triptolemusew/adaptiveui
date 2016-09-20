@@ -1,6 +1,6 @@
 import sys
 import math
-import Image
+from PIL import Image
 from facerec.dataset import NumericDataSet
 from facerec.feature import Fisherfaces
 from facerec.visual import subplot
