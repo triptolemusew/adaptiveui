@@ -1,10 +1,4 @@
-# -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'fusemuse_4.ui'
-#
-# Created by: PyQt4 UI code generator 4.11.4
-#
-# WARNING! All changes made in this file will be lost!
 from PyQt4 import QtCore, QtGui
 from PyQt4 import phonon
 from PyQt4.phonon import Phonon
@@ -17,6 +11,7 @@ from facerec.serialization import save_model, load_model
 # for face detection (you can also use OpenCV2 directly):
 from facedet.detector import CascadedDetector
 import cv2
+import time
 import sys
 import glob, os
 
@@ -43,11 +38,18 @@ except AttributeError:
 class Ui_MainWindow(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
+        self.animation = QtCore.QPropertyAnimation(self, "size")
+        self.animation.setEndValue(QtCore.QSize(640, 480))
+        self.animation_button_currently = QtCore.QPropertyAnimation(self.currently_playing_button, "size")
+
+
+        #TODO: above to be filled up with the rest of the buttons
         self._state = 0
+        self._camera_state = 0
         self.gender = ""
         self._background_clicked = 0
         self.setObjectName(_fromUtf8("MainWindow"))
-        self.resize(1254, 872)
+        self.resize(640, 480)
         self.centralwidget = QtGui.QWidget(self)
         self.centralwidget.setObjectName(_fromUtf8("centralwidget"))
         self.verticalLayout_3 = QtGui.QVBoxLayout(self.centralwidget)
@@ -294,7 +296,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
         # self.notifications_button.clicked.connect(lambda: self.onChanged(self.notifications_button))
         # self.collections_button.clicked.connect(lambda: self.onChanged(self.collections_button))
-        self.notifications_button.clicked.connect(self.cameraStack)
+        self.notifications_button.clicked.connect(self.switchingCamera)
         self.collections_button.clicked.connect(self.filterCollections)
         self.likes_button.clicked.connect(self.filterLike)
 
@@ -314,16 +316,12 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.mediaObject.aboutToFinish.connect(self.aboutToFinish)
 
         Phonon.createPath(self.mediaObject, self.audioOutput)
-
         self.setupActions()  # first method
         # self.setupMenus()  # second method
         self.setupUi()  # third method
         self.lcdNumber.display("00:00")
-
         self.sources = []
         self.retrieveMusicList()
-        # self.cameraStack()
-
 
     def tick(self, time):
         displayTime = QtCore.QTime(0, (time / 60000) % 60, (time / 1000) % 60)
@@ -472,7 +470,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.list_settings.setSortingEnabled(__sortingEnabled)
         self.currently_playing_button.setText(_translate("MainWindow", "Currently Playing", None))
         self.collections_button.setText(_translate("MainWindow", "Collections", None))
-        self.notifications_button.setText(_translate("MainWindow", "Notifications", None))
+        self.notifications_button.setText(_translate("MainWindow", "Camera On/Off", None))
         self.notifications_button.setShortcut(_translate("MainWindow", "Return", None))
         self.actionExit.setText(_translate("MainWindow", "Exit", None))
         self.actionAdd_Folder.setText(_translate("MainWindow", "Add Folder", None))
@@ -531,12 +529,12 @@ class Ui_MainWindow(QtGui.QMainWindow):
         if self.sources:
             self.metaInformationResolver.setCurrentSource(self.sources[index])
 
+    # TODO: implementing the add folder function
     def addFolder(self):
         dialog = FileDialog()
         if dialog.exec_() == QtGui.QDialog.Accepted:
             print(dialog.selectedFiles())
 
-            # TODO: implementing the add folder function
 
     def retrieveMusicList(self):
         file = QtCore.QFile('musiclist.txt')
@@ -622,12 +620,13 @@ class Ui_MainWindow(QtGui.QMainWindow):
         for i in range(0, self.music_table.rowCount()):
             self.music_table.setRowHidden(i, False)
 
-    # TODO: Finish the face/detection function
+    def cameraShutdown(self):
+        self.video_capture.release()
+        time.sleep(1)
+        cv2.destroyWindow('video')
+        cv2.waitKey(1)
+
     def cameraStack(self):
-        # layout = QtGui.QFormLayout()
-        # layout.addRow("Name", QtGui.QLineEdit())
-        # layout.addRow("Address", QtGui.QLineEdit())
-        # self.page_4.setLayout(layout)
         model_filename = "model.pkl"
         image_size = (200,200)
         [images, labels, subject_names] = read_images("gender/", image_size)
@@ -638,23 +637,24 @@ class Ui_MainWindow(QtGui.QMainWindow):
         print "save model"
         save_model(model_filename, model)
 
-
         self.model = load_model(model_filename)
-        # self.model = load_model("model.pkl")
         faceCascade = 'haarcascade_frontalface_alt2.xml'
         print self.model.image_size
         print "Starting the face detection"
 
         self.detector = CascadedDetector(cascade_fn=faceCascade, minNeighbors=5, scaleFactor=1.1)
-        video_capture = cv2.VideoCapture(0)
+        self.video_capture = cv2.VideoCapture(0)
 
         while True:
-            ret, frame = video_capture.read()
-
+            ret, frame = self.video_capture.read()
             img = cv2.resize(frame, (frame.shape[1] / 2, frame.shape[0] / 2), interpolation=cv2.INTER_CUBIC)
             imgout = img.copy()
             for i, r in enumerate(self.detector.detect(img)):
                 x0, y0, x1, y1 = r
+                self.x0 = x0
+                self.y0 = y0
+                self.x1 = x1
+                self.y1 = y1
                 # (1) Get face, (2) Convert to grayscale & (3) resize to image_size:
                 face = img[y0:y1, x0:x1]
                 face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
@@ -664,16 +664,15 @@ class Ui_MainWindow(QtGui.QMainWindow):
                 # Draw the face area in image:
                 cv2.rectangle(imgout, (x0, y0), (x1, y1), (0, 255, 0), 2)
                 # Draw the predicted name (folder name...):
+                self.distance = str(np.asscalar(np.int16(self.y0)))
                 draw_str(imgout, (x0 - 20, y0 - 20), self.model.subject_names[prediction])
-                self.gender =  self.model.subject_names[prediction]
+                draw_str(imgout, (x0 - 20, y0 - 35), "distance: " + self.distance + "cm")
+                self.gender = self.model.subject_names[prediction]
                 self.changeSetting()
-            cv2.imshow('videofacerec', imgout)
-
+            cv2.imshow('video', imgout)
             ch = cv2.waitKey(10)
             if ch == 27:
                 break
-
-
 
         # ret, frame = video_capture.read()
         # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -695,17 +694,33 @@ class Ui_MainWindow(QtGui.QMainWindow):
         #
         # if cv2.waitKey(1) & 0xFF == ord('q'):
         #     sys.exit()
+
+    def switchingCamera(self):
+        if self._camera_state == 0:
+            self.cameraStack()
+            self._camera_state = 1
+        else:
+            self.cameraShutdown()
+            self._camera_state = 0
+
+    #TODO: Figuring out to animate transitively
+    #Very important part of the program!
     def changeSetting(self):
         if self.gender == "male":
-            print "ayys!"
-            animation = QtCore.QPropertyAnimation(self.currently_playing_button, "color")
-            animation.setDuration(200)
-            animation.setStartValue(QtGui.QColor(0, 0, 0))
-            animation.setEndValue(QtGui.QColor(240, 240, 240))
-            animation.start()
-        elif self.gender == "female":
-            print "d'oh"
+            self.animation_button_currently.setEndValue(QtCore.QSize(500, 500))
+            # animation_button = QtCore.QPropertyAnimation
+        #     print "male"
+            # self.animation.setEndValue(QtCore.QSize(1280, 720))
+            # if self.distance < 80:
+                # self.notifications_button.setStyleSheet('{font-size: 181pt;}')
+                # self.animation = QtCore.QPropertyAnimation(self, "size")
+                # self.animation.setEndValue(QtCore.QSize(1280, 720))
 
+        if self.gender == "male":
+            if self.distance < 80:
+                self.animation.setEndValue(QtCore.QSize(1280, 720))
+        self.animation.start()
+    #TODO: Try with returning self.animation.start()
 
     def displayStack(self):
         if self.stackedWidget.currentIndex() == 1:
@@ -726,19 +741,6 @@ class FileDialog(QtGui.QFileDialog):
         super(FileDialog, self).accept(self)
 
 def read_images(path, image_size=None):
-    """Reads the images in a given folder, resizes images on the fly if size is given.
-
-    Args:
-        path: Path to a folder with subfolders representing the subjects (persons).
-        sz: A tuple with the size Resizes
-
-    Returns:
-        A list [X, y, folder_names]
-
-            X: The images, which is a Python list of numpy arrays.
-            y: The corresponding labels (the unique number of the subject, person) in a Python list.
-            folder_names: The names of the folder, so you can display it in a prediction.
-    """
     c = 0
     X = []
     y = []
@@ -764,22 +766,11 @@ def read_images(path, image_size=None):
     return [X,y,folder_names]
 
 def get_model(image_size, subject_names):
-    """ This method returns the PredictableModel which is used to learn a model
-        for possible further usage. If you want to define your own model, this
-        is the method to return it from!
-    """
-    # Define the Fisherfaces Method as Feature Extraction method:
     feature = Fisherfaces()
-    # Define a 1-NN classifier with Euclidean Distance:
     classifier = NearestNeighbor(dist_metric=EuclideanDistance(), k=1)
-    # Return the model as the combination:
     return ExtendedPredictableModel(feature=feature, classifier=classifier, image_size=image_size, subject_names=subject_names)
 
 class ExtendedPredictableModel(PredictableModel):
-    """ Subclasses the PredictableModel to store some more
-        information, so we don't need to pass the dataset
-        on each program call...
-    """
 
     def __init__(self, feature, classifier, image_size, subject_names):
         PredictableModel.__init__(self, feature=feature, classifier=classifier)
@@ -787,12 +778,10 @@ class ExtendedPredictableModel(PredictableModel):
         self.subject_names = subject_names
 
 if __name__ == "__main__":
-    import sys
-
     app = QtGui.QApplication(sys.argv)
-    # MainWindow = QtGui.QMainWindow()
     ui = Ui_MainWindow()
-    # ui.setupUi(MainWindow)
-    # MainWindow.show()
     ui.show()
     sys.exit(app.exec_())
+
+#TODO: Add mood detection -> Happy/Angry/Neutral only!
+#TODO: Fix the GUI a little bit! -> This one can be done later
