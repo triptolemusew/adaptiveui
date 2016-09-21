@@ -13,8 +13,11 @@ from facedet.detector import CascadedDetector
 import cv2
 import time
 import sys
+import threading
+import multiprocessing
 import glob, os
 
+queue_from_cam = multiprocessing.Queue()
 from helper.common import *
 from helper.video import *
 
@@ -40,7 +43,6 @@ class Ui_MainWindow(QtGui.QMainWindow):
         QtGui.QMainWindow.__init__(self)
         self.animation = QtCore.QPropertyAnimation(self, "size")
         self.animation.setEndValue(QtCore.QSize(640, 480))
-        self.animation_button_currently = QtCore.QPropertyAnimation(self.currently_playing_button, "size")
 
 
         #TODO: above to be filled up with the rest of the buttons
@@ -206,7 +208,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         icon4.addPixmap(QtGui.QPixmap(_fromUtf8("Buttons/speakers.png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.currently_playing_button.setIcon(icon4)
         self.currently_playing_button.setIconSize(QtCore.QSize(23, 23))
-        self.currently_playing_button.setFlat(True)
+        self.currently_playing_button.setFlat(False)
         self.currently_playing_button.setObjectName(_fromUtf8("currently_playing_button"))
         self.horizontalLayout_7.addWidget(self.currently_playing_button)
         self.gridLayout_3.addLayout(self.horizontalLayout_7, 6, 0, 1, 1)
@@ -322,6 +324,9 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.lcdNumber.display("00:00")
         self.sources = []
         self.retrieveMusicList()
+
+        self.animation_button_currently = QtCore.QPropertyAnimation(self.currently_playing_button, "size")
+
 
     def tick(self, time):
         displayTime = QtCore.QTime(0, (time / 60000) % 60, (time / 1000) % 60)
@@ -454,7 +459,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow", None))
         self.menuFile.setTitle(_translate("MainWindow", "asdasdsad", None))
         self.menuAbout.setTitle(_translate("MainWindow", "About", None))
-        self.Dock_Settings.setWindowTitle(_translate("MainWindow", "asdasd Item", None))
+        self.Dock_Settings.setWindowTitle(_translate("MainWindow", "Dock Items", None))
         self.likes_button.setText(_translate("MainWindow", "Likes", None))
         self.saved_settings_box.setTitle(_translate("MainWindow", "Saved settings", None))
         __sortingEnabled = self.list_settings.isSortingEnabled()
@@ -497,11 +502,11 @@ class Ui_MainWindow(QtGui.QMainWindow):
             print 'click'
 
     def getBackColor(self):
-        return self.palette().color(QtGui.QPalette.Background)
+        return self.currently_playing_button.palette().color(QtGui.QPalette.Button)
 
     def setBackColor(self, color):
-        pal = self.palette()
-        pal.setColor(QtGui.QPalette.Background, color)
+        pal = self.notifications_button.palette()
+        pal.setColor(QtGui.QPalette.Button, color)
         self.setPalette(pal)
 
     def addFiles(self):
@@ -556,12 +561,12 @@ class Ui_MainWindow(QtGui.QMainWindow):
         color1 = QtGui.QColor(255, 0, 0)
         color2 = QtGui.QColor(0, 255, 0)
 
-        self.color = QtCore.QPropertyAnimation(self, 'backColor')
+        self.color = QtCore.QPropertyAnimation(self.notifications_button, 'color')
         self.color.setStartValue(color1)
-        self.color.setKeyValueAt(0.5, color2)
-        self.color.setEndValue(color1)
+        # self.color.setKeyValueAt(0.5, color2)
+        self.color.setEndValue(color2)
         self.color.setDuration(1000)
-        self.color.setLoopCount(-1)
+        # self.color.setLoopCount(-1)
         self.color.start()
 
     def setupUi(self):
@@ -627,7 +632,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         cv2.waitKey(1)
 
     def cameraStack(self):
-        model_filename = "model.pkl"
+        model_filename = "model_gender_working.pkl"
         image_size = (200,200)
         [images, labels, subject_names] = read_images("gender/", image_size)
         list_of_labels = list(xrange(max(labels)+1))
@@ -637,9 +642,22 @@ class Ui_MainWindow(QtGui.QMainWindow):
         print "save model"
         save_model(model_filename, model)
 
-        self.model = load_model(model_filename)
+        self.model_gender = load_model(model_filename)
+
+        model_filename = "model_emotion.pkl"
+        image_size = (200, 200)
+        [images, labels, subject_names] = read_images("emotion/", image_size)
+        list_of_labels = list(xrange(max(labels) + 1))
+        subject_dictionary = dict(zip(list_of_labels, subject_names))
+        model = get_model(image_size=image_size, subject_names=subject_dictionary)
+        model.compute(images, labels)
+        print "save model"
+        save_model(model_filename, model)
+
+        self.model_emotion = load_model(model_filename)
+
         faceCascade = 'haarcascade_frontalface_alt2.xml'
-        print self.model.image_size
+        print self.model_gender.image_size
         print "Starting the face detection"
 
         self.detector = CascadedDetector(cascade_fn=faceCascade, minNeighbors=5, scaleFactor=1.1)
@@ -658,17 +676,22 @@ class Ui_MainWindow(QtGui.QMainWindow):
                 # (1) Get face, (2) Convert to grayscale & (3) resize to image_size:
                 face = img[y0:y1, x0:x1]
                 face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
-                face = cv2.resize(face, self.model.image_size, interpolation=cv2.INTER_CUBIC)
+                face = cv2.resize(face, self.model_gender.image_size, interpolation=cv2.INTER_CUBIC)
                 # Get a prediction from the model:
-                prediction = self.model.predict(face)[0]
+                prediction = self.model_gender.predict(face)[0]
+                emotion = self.model_emotion.predict(face)[0]
                 # Draw the face area in image:
                 cv2.rectangle(imgout, (x0, y0), (x1, y1), (0, 255, 0), 2)
                 # Draw the predicted name (folder name...):
                 self.distance = str(np.asscalar(np.int16(self.y0)))
-                draw_str(imgout, (x0 - 20, y0 - 20), self.model.subject_names[prediction])
+                draw_str(imgout, (x0 - 20, y0 - 5), self.model_emotion.subject_names[emotion])
+                draw_str(imgout, (x0 - 20, y0 - 20), self.model_gender.subject_names[prediction])
                 draw_str(imgout, (x0 - 20, y0 - 35), "distance: " + self.distance + "cm")
-                self.gender = self.model.subject_names[prediction]
-                self.changeSetting()
+                self.gender = self.model_gender.subject_names[prediction]
+                self.changeSetting(self.currently_playing_button)
+                self.changeSetting(self.notifications_button)
+                self.changeSetting(self.likes_button)
+                self.changeSetting(self.collections_button)
             cv2.imshow('video', imgout)
             ch = cv2.waitKey(10)
             if ch == 27:
@@ -697,31 +720,56 @@ class Ui_MainWindow(QtGui.QMainWindow):
 
     def switchingCamera(self):
         if self._camera_state == 0:
+            threads = [t for t in threading.enumerate()]
             self.cameraStack()
+            # self.m = multiprocessing.Process(target=self.changeSetting)
+            # self.m.start()
+            # self.t = threading.Thread(target=self.cameraStack)
+            # self.t.daemon = True
+            # self.t.start()
+            # print "\n\n\n\male"
             self._camera_state = 1
         else:
             self.cameraShutdown()
             self._camera_state = 0
 
     #TODO: Figuring out to animate transitively
-    #Very important part of the program!
-    def changeSetting(self):
-        if self.gender == "male":
-            self.animation_button_currently.setEndValue(QtCore.QSize(500, 500))
-            # animation_button = QtCore.QPropertyAnimation
-        #     print "male"
-            # self.animation.setEndValue(QtCore.QSize(1280, 720))
-            # if self.distance < 80:
-                # self.notifications_button.setStyleSheet('{font-size: 181pt;}')
-                # self.animation = QtCore.QPropertyAnimation(self, "size")
-                # self.animation.setEndValue(QtCore.QSize(1280, 720))
+    def changeSetting(self, button):
+        int_distance = int(self.distance)
+        if int_distance > 90:
+            self.resize(640, 480)
+            if self.gender == "male":
+                if not button.styleSheet() == "background-color: #99ccff; border-radius: 5px; text-align:left;":
+                    button.setStyleSheet("background-color: #99ccff; border-radius: 5px;text-align:left;")
+                if not self.centralwidget.styleSheet() == "background-color: #ffcccc; border-radius: 5px; text-align:left":
+                    self.centralwidget.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+                if not self.dockWidgetContents.styleSheet() == "background-color: #ffcccc; border-radius: 5px; text-align:left":
+                    self.dockWidgetContents.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+            elif self.gender == "female":
+                if not button.styleSheet() == "background-color: #ff9999; border-radius: 5px;text-align:left;":
+                    button.setStyleSheet("background-color: #ff9999; border-radius: 5px;text-align:left;")
+                if not self.centralwidget.styleSheet() == "background-color: #ff9999; border-radius: 5px;text-align:left;":
+                    button.setStyleSheet("background-color: #ff9999; border-radius: 5px;text-align:left;")
+                if not self.dockWidgetContents.styleSheet() == "background-color: #ff9999; border-radius: 5px;text-align:left;":
+                    button.setStyleSheet("background-color: #ff9999; border-radius: 5px;text-align:left;")
+        elif int_distance < 90:
+            self.resize(1280, 720)
+            if self.gender == "male":
+                if not button.styleSheet() == "background-color: #99ccff; border-radius: 5px;text-align:left;":
+                    button.setStyleSheet("background-color: #99ccff; border-radius: 5px;text-align:left;")
+                if not self.centralwidget.styleSheet() == "background-color: #ccffff; border-radius: 5px; text-align:left":
+                    self.centralwidget.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+                if not self.dockWidgetContents.styleSheet() == "background-color: #ccffff; border-radius: 5px; text-align:left":
+                    self.dockWidgetContents.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+            elif self.gender == "female":
+                if not button.styleSheet() == "background-color: #ff9999; border-radius: 5px;text-align:left;":
+                    button.setStyleSheet("background-color: #ff9999; border-radius: 5px;text-align:left;")
+                if not self.centralwidget.styleSheet() == "background-color: #ffcccc; border-radius: 5px; text-align:left":
+                    self.centralwidget.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+                if not self.dockWidgetContents.styleSheet() == "background-color: #ffcccc; border-radius: 5px; text-align:left":
+                    self.dockWidgetContents.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
 
-        if self.gender == "male":
-            if self.distance < 80:
-                self.animation.setEndValue(QtCore.QSize(1280, 720))
-        self.animation.start()
     #TODO: Try with returning self.animation.start()
-
     def displayStack(self):
         if self.stackedWidget.currentIndex() == 1:
             self.stackedWidget.setCurrentIndex(0)
@@ -729,7 +777,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
             self.stackedWidget.setCurrentIndex(1)
 
     backColor = QtCore.pyqtProperty(QtGui.QColor, getBackColor, setBackColor)
-
+    # color = QtCore.pyqtProperty(QtGui.QColor, getBackColor, setBackColor)
 
 class FileDialog(QtGui.QFileDialog):
     def __init__(self, *args, **kwargs):

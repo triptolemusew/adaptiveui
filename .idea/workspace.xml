@@ -26,8 +26,28 @@
       <file leaf-file-name="main.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="180">
-              <caret line="711" column="26" selection-start-line="711" selection-start-column="26" selection-end-line="711" selection-end-column="26" />
+            <state relative-caret-position="464">
+              <caret line="769" column="123" selection-start-line="769" selection-start-column="123" selection-end-line="769" selection-end-column="123" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="QMainWindow.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharm2016.2/system/python_stubs/-1247972723/PyQt4/QtGui/QMainWindow.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="900">
+              <caret line="53" column="8" selection-start-line="53" selection-start-column="8" selection-end-line="53" selection-end-column="8" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="QColor.py" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharm2016.2/system/python_stubs/-1247972723/PyQt4/QtGui/QColor.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="720">
+              <caret line="40" column="8" selection-start-line="40" selection-start-column="8" selection-end-line="40" selection-end-column="8" />
               <folding />
             </state>
           </provider>
@@ -38,16 +58,6 @@
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="144">
               <caret line="8" column="4" selection-start-line="8" selection-start-column="4" selection-end-line="8" selection-end-column="4" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="model.pkl" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/../facerec/py/apps/scripts/model.pkl">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="0">
-              <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -119,10 +129,10 @@
     </option>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="701" />
-    <option name="y" value="52" />
-    <option name="width" value="665" />
-    <option name="height" value="716" />
+    <option name="x" value="37" />
+    <option name="y" value="24" />
+    <option name="width" value="1329" />
+    <option name="height" value="744" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="false">
     <OptionsSetting value="true" id="Add" />
@@ -327,7 +337,7 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="701" y="52" width="665" height="716" extended-state="4" />
+    <frame x="37" y="24" width="1329" height="744" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.0" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
@@ -386,21 +396,6 @@
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/output.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3553">
-          <caret line="209" column="39" selection-start-line="209" selection-start-column="39" selection-end-line="209" selection-end-column="39" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="10676">
-          <caret line="631" column="0" selection-start-line="631" selection-start-column="0" selection-end-line="631" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/crop_face.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="85">
@@ -659,10 +654,34 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../facerec/py/apps/scripts/model.pkl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="180">
-          <caret line="711" column="26" selection-start-line="711" selection-start-column="26" selection-end-line="711" selection-end-column="26" />
+        <state relative-caret-position="464">
+          <caret line="769" column="123" selection-start-line="769" selection-start-column="123" selection-end-line="769" selection-end-column="123" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2016.2/system/python_stubs/-1247972723/PyQt4/QtGui/QMainWindow.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="900">
+          <caret line="53" column="8" selection-start-line="53" selection-start-column="8" selection-end-line="53" selection-end-column="8" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2016.2/system/python_stubs/-1247972723/PyQt4/QtGui/QColor.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="720">
+          <caret line="40" column="8" selection-start-line="40" selection-start-column="8" selection-end-line="40" selection-end-column="8" />
           <folding />
         </state>
       </provider>
@@ -671,14 +690,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="144">
           <caret line="8" column="4" selection-start-line="8" selection-start-column="4" selection-end-line="8" selection-end-column="4" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/../facerec/py/apps/scripts/model.pkl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding />
         </state>
       </provider>
