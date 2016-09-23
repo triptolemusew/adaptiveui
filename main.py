@@ -220,7 +220,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         icon5.addPixmap(QtGui.QPixmap(_fromUtf8("Buttons/music-player (1).png")), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.collections_button.setIcon(icon5)
         self.collections_button.setIconSize(QtCore.QSize(23, 23))
-        self.collections_button.setFlat(True)
+        self.collections_button.setFlat(False)
         self.collections_button.setObjectName(_fromUtf8("collections_button"))
         self.horizontalLayout_5.addWidget(self.collections_button)
         self.gridLayout_3.addLayout(self.horizontalLayout_5, 4, 0, 1, 1)
@@ -243,7 +243,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.notifications_button.setAutoRepeat(False)
         self.notifications_button.setAutoDefault(False)
         self.notifications_button.setDefault(False)
-        self.notifications_button.setFlat(True)
+        self.notifications_button.setFlat(False)
         self.notifications_button.setObjectName(_fromUtf8("notifications_button"))
         self.horizontalLayout_3.addWidget(self.notifications_button)
         self.gridLayout_3.addLayout(self.horizontalLayout_3, 2, 0, 1, 1)
@@ -291,7 +291,7 @@ class Ui_MainWindow(QtGui.QMainWindow):
         self.collections_button.setAutoRepeat(True)
         self.collections_button.setAutoRepeatDelay(1000)
         self.collections_button.setAutoRepeatInterval(1000)
-
+        self.likes_button.setFlat(False)
         self.likes_button.setAutoRepeat(True)
         self.likes_button.setAutoRepeatDelay(1000)
         self.likes_button.setAutoRepeatInterval(1000)
@@ -757,17 +757,17 @@ class Ui_MainWindow(QtGui.QMainWindow):
             if self.gender == "male":
                 if not button.styleSheet() == "background-color: #99ccff; border-radius: 5px;text-align:left;":
                     button.setStyleSheet("background-color: #99ccff; border-radius: 5px;text-align:left;")
-                if not self.centralwidget.styleSheet() == "background-color: #ccffff; border-radius: 5px; text-align:left":
-                    self.centralwidget.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
-                if not self.dockWidgetContents.styleSheet() == "background-color: #ccffff; border-radius: 5px; text-align:left":
-                    self.dockWidgetContents.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+                # if not self.centralwidget.styleSheet() == "background-color: #ccffff; border-radius: 5px; text-align:left":
+                #     self.centralwidget.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+                # if not self.dockWidgetContents.styleSheet() == "background-color: #ccffff; border-radius: 5px; text-align:left":
+                #     self.dockWidgetContents.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
             elif self.gender == "female":
                 if not button.styleSheet() == "background-color: #ff9999; border-radius: 5px;text-align:left;":
                     button.setStyleSheet("background-color: #ff9999; border-radius: 5px;text-align:left;")
-                if not self.centralwidget.styleSheet() == "background-color: #ffcccc; border-radius: 5px; text-align:left":
-                    self.centralwidget.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
-                if not self.dockWidgetContents.styleSheet() == "background-color: #ffcccc; border-radius: 5px; text-align:left":
-                    self.dockWidgetContents.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+                # if not self.centralwidget.styleSheet() == "background-color: #ffcccc; border-radius: 5px; text-align:left":
+                #     self.centralwidget.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
+                # if not self.dockWidgetContents.styleSheet() == "background-color: #ffcccc; border-radius: 5px; text-align:left":
+                #     self.dockWidgetContents.setStyleSheet("background-color: #ccffff; border-radius: 5px; text-align:left")
 
     #TODO: Try with returning self.animation.start()
     def displayStack(self):
